@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Truss Evaluation Notes</title>
+<!-- Home-screen app (PWA) — these are inert when opened as a local file -->
+<meta name="theme-color" content="#1f4e79">
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Truss Notes">
+<link rel="apple-touch-icon" href="./icon-180.png">
+<style>
+  :root{
+    --bg:#f4f6f8; --panel:#ffffff; --ink:#1f2933; --muted:#6b7785;
+    --line:#d9e0e6; --line-strong:#b9c4cd;
+    --brand:#1f4e79; --brand-700:#16395a; --brand-50:#eaf1f8;
+    --accent:#2f80b8;
+    --danger:#b42318; --danger-bg:#fdecea;
+    --ok:#2e7d32;
+    --shadow:0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.10);
+    --radius:10px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
+    color:var(--ink); background:var(--bg); font-size:15px; line-height:1.45;
+  }
+  button{font-family:inherit}
+  input,textarea{font-family:inherit;font-size:15px;color:var(--ink)}
+  .wrap{max-width:1040px;margin:0 auto;padding:20px 18px 60px}
+
+  /* ---------- Top brand bar ---------- */
+  .appbar{
+    background:var(--brand); color:#fff;
+    display:flex;align-items:center;gap:12px;
+    padding:12px 18px; box-shadow:var(--shadow);
+    /* sit clear of the iPhone/iPad status bar when launched from the Home Screen */
+    padding-top:calc(12px + env(safe-area-inset-top, 0px));
+    padding-left:calc(18px + env(safe-area-inset-left, 0px));
+    padding-right:calc(18px + env(safe-area-inset-right, 0px));
+  }
+  .appbar .logo{font-weight:700;letter-spacing:.3px}
+  .appbar .sub{opacity:.8;font-size:13px}
+  .appbar .spacer{flex:1}
+  .appbar .siteTag{
+    background:rgba(255,255,255,.14); padding:4px 10px;border-radius:999px;
+    font-size:13px; display:none; align-items:center; gap:6px;
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    border:1px solid var(--line-strong); background:#fff; color:var(--ink);
+    padding:8px 14px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;
+    display:inline-flex;align-items:center;gap:7px;transition:.12s;
+  }
+  .btn:hover{background:#f3f6f9}
+  .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  .btn.primary:hover{background:var(--brand-700)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn.sm{padding:6px 10px;font-size:13px}
+
+  /* ---------- Cards ---------- */
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+
+  /* ---------- Setup screen ---------- */
+  #setup .card{max-width:620px;margin:34px auto;padding:26px 28px}
+  #setup h1{margin:0 0 4px;font-size:22px;color:var(--brand-700)}
+  #setup p.lead{margin:0 0 22px;color:var(--muted)}
+  .field{margin-bottom:20px}
+  .field label{display:block;font-weight:600;margin-bottom:7px}
+  .field .hint{font-weight:400;color:var(--muted);font-size:13px}
+  input.text{
+    width:100%;padding:11px 12px;border:1px solid var(--line-strong);border-radius:8px;background:#fff;
+  }
+  input.text:focus,textarea:focus{outline:2px solid var(--brand-50);border-color:var(--brand)}
+  .barnpick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:520px){.barnpick{grid-template-columns:1fr}}
+  .barnopt{
+    display:flex;align-items:center;gap:11px;border:1px solid var(--line-strong);
+    border-radius:9px;padding:12px 13px;cursor:pointer;user-select:none;transition:.12s;background:#fff;
+  }
+  .barnopt:hover{border-color:var(--accent);background:var(--brand-50)}
+  .barnopt.on{border-color:var(--brand);background:var(--brand-50);box-shadow:inset 0 0 0 1px var(--brand)}
+  .barnopt input{width:18px;height:18px;accent-color:var(--brand)}
+  .barnopt .nm{font-weight:600}
+  .setup-note{font-size:12.5px;color:var(--muted);margin:-8px 0 18px}
+  .setup-actions{display:flex;gap:12px;align-items:center;margin-top:8px}
+  .setup-actions .spacer{flex:1}
+  .resume{margin:0 auto 18px;max-width:620px}
+  .resume .card{display:flex;gap:12px;align-items:center;padding:14px 18px;border-left:4px solid var(--accent)}
+  .resume .card .t{font-weight:600}
+  .resume .card .m{color:var(--muted);font-size:13px}
+
+  /* ---------- Form screen ---------- */
+  #form{display:none}
+  .toolbar{
+    display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:18px 0 14px;
+  }
+  .toolbar .spacer{flex:1}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end;border-bottom:2px solid var(--line);margin-bottom:0}
+  .tab{
+    border:1px solid var(--line);border-bottom:none;background:#eef2f5;color:var(--muted);
+    padding:10px 18px;border-radius:9px 9px 0 0;cursor:pointer;font-weight:600;position:relative;top:2px;
+  }
+  .tab:hover{color:var(--ink)}
+  .tab.active{background:var(--panel);color:var(--brand-700);border-color:var(--line);border-bottom:2px solid var(--panel)}
+  .addwrap{position:relative;display:inline-block}
+  .addbtn{
+    border:1px dashed var(--line-strong);background:#fff;color:var(--brand);
+    padding:9px 14px;border-radius:9px;cursor:pointer;font-weight:600;position:relative;top:2px;
+  }
+  .addbtn:hover{background:var(--brand-50);border-color:var(--brand)}
+  .addmenu{
+    position:absolute;top:46px;left:0;background:#fff;border:1px solid var(--line-strong);
+    border-radius:8px;box-shadow:0 8px 24px rgba(16,24,40,.16);padding:6px;z-index:30;min-width:180px;display:none;
+  }
+  .addmenu.open{display:block}
+  .addmenu .mhdr{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;padding:5px 10px 7px}
+  .addmenu .mi{display:block;width:100%;text-align:left;border:none;background:transparent;padding:9px 12px;border-radius:6px;cursor:pointer;font-size:14px;color:var(--ink)}
+  .addmenu .mi:hover{background:var(--brand-50)}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-top:none;border-radius:0 0 var(--radius) var(--radius);padding:20px 22px}
+  .panel h2{margin:0 0 3px;font-size:20px;color:var(--brand-700)}
+  .panel .barnsub{color:var(--muted);font-size:13px;margin-bottom:10px}
+  .barnctl{display:flex;gap:8px;margin:0 0 16px;flex-wrap:wrap}
+  .barnctl button{
+    border:1px solid var(--line);background:#fff;color:var(--muted);font-size:12.5px;font-weight:600;
+    padding:5px 11px;border-radius:7px;cursor:pointer;display:inline-flex;gap:6px;align-items:center;
+  }
+  .barnctl button:hover{background:#f3f6f9;color:var(--ink)}
+  .barnctl button.danger:hover{background:var(--danger-bg);color:var(--danger);border-color:#f3c0bb}
+
+  .gen label{display:block;font-weight:600;margin-bottom:7px}
+  textarea.general{
+    width:100%;min-height:88px;padding:11px 12px;border:1px solid var(--line-strong);border-radius:8px;
+    resize:vertical;line-height:1.5;
+  }
+  .gen .hint{color:var(--muted);font-size:12.5px;margin-top:6px}
+
+  .tablehdr{display:flex;align-items:center;margin:22px 0 8px}
+  .tablehdr h3{margin:0;font-size:16px}
+  .tablehdr .spacer{flex:1}
+  .tablehdr .count{color:var(--muted);font-size:13px}
+
+  .rowhead{
+    display:grid;grid-template-columns:190px 1fr 36px;gap:10px;
+    padding:0 2px 6px;font-size:12.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;
+  }
+  .rows{display:flex;flex-direction:column;gap:8px}
+  .trow{display:grid;grid-template-columns:190px 1fr 36px;gap:10px;align-items:start}
+  .trow input.truss{
+    padding:10px 11px;border:1px solid var(--line-strong);border-radius:8px;width:100%;
+  }
+  .trow textarea.notes{
+    padding:10px 11px;border:1px solid var(--line-strong);border-radius:8px;width:100%;
+    resize:none;overflow:hidden;min-height:42px;line-height:1.45;
+  }
+  .trow.empty input.truss, .trow.empty textarea.notes{background:#fcfdfe;border-style:dashed}
+  .trow .del{
+    border:1px solid transparent;background:transparent;color:var(--muted);cursor:pointer;
+    width:36px;height:42px;border-radius:8px;font-size:18px;line-height:1;visibility:hidden;
+  }
+  .trow .del:hover{background:var(--danger-bg);color:var(--danger);border-color:#f3c0bb}
+  .trow.filled .del{visibility:visible}
+
+  .footnote{color:var(--muted);font-size:12.5px;margin-top:14px;display:flex;align-items:center;gap:7px}
+
+  .toast{
+    position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--brand-700);color:#fff;padding:11px 18px;border-radius:9px;box-shadow:0 6px 20px rgba(0,0,0,.25);
+    opacity:0;pointer-events:none;transition:.25s;font-size:14px;z-index:50;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* ---------- Print report ---------- */
+  #printArea{display:none}
+  @media print{
+    .appbar,.toolbar,.tabs,.panel,#setup,.resume,.toast{display:none !important}
+    body{background:#fff}
+    .wrap{max-width:none;padding:0}
+    #printArea{display:block}
+    .pbarn{page-break-after:always;padding:6px 0 0}
+    .pbarn:last-child{page-break-after:auto}
+    .pbarn h2{font-size:18px;margin:0 0 2px;color:#000}
+    .pbarn .psite{font-size:12px;color:#333;margin-bottom:10px}
+    .pbarn .pgen{white-space:pre-wrap;border:1px solid #888;padding:8px 10px;margin-bottom:12px;font-size:12px}
+    table.ptab{width:100%;border-collapse:collapse;font-size:12px}
+    table.ptab th,table.ptab td{border:1px solid #555;padding:5px 8px;text-align:left;vertical-align:top}
+    table.ptab th{background:#e8eef4}
+    table.ptab td.tcol{width:24%;white-space:nowrap}
+  }
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <span class="logo">Johnson Engineering</span>
+  <span class="sub">Truss Evaluation Notes</span>
+  <span class="spacer"></span>
+  <span class="siteTag" id="siteTag">📍 <b id="siteTagName"></b></span>
+</div>
+
+<!-- ============ SETUP SCREEN ============ -->
+<section id="setup" class="wrap">
+  <div class="resume" id="resumeBox" style="display:none">
+    <div class="card">
+      <div style="flex:1">
+        <div class="t">Resume previous session</div>
+        <div class="m" id="resumeMeta"></div>
+      </div>
+      <button class="btn" id="resumeDiscard">Discard</button>
+      <button class="btn primary" id="resumeBtn">Resume</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h1>Truss Evaluation Notes</h1>
+    <p class="lead">Set up the site, then pick which barns are here. Each barn becomes its own tab.</p>
+
+    <div class="field">
+      <label for="siteInput">Site <span class="hint">(e.g., M25)</span></label>
+      <input class="text" id="siteInput" type="text" placeholder="Enter site name or number" autocomplete="off">
+    </div>
+
+    <div class="field">
+      <label>Which barns are at this site? <span class="hint">(check all that apply)</span></label>
+      <div class="barnpick" id="barnPick"></div>
+    </div>
+    <div class="setup-note">Have two of the same kind (e.g. two Gestation barns)? Add the second one with “＋ Add barn” once you’re in the form.</div>
+
+    <div class="setup-actions">
+      <button class="btn" id="loadFileBtn">📂 Open saved file…</button>
+      <span class="spacer"></span>
+      <button class="btn primary" id="startBtn" disabled>Open form →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FORM SCREEN ============ -->
+<section id="form" class="wrap">
+  <div class="toolbar">
+    <button class="btn sm" id="setupBtn">⚙ Site &amp; barns</button>
+    <span class="spacer"></span>
+    <button class="btn sm" id="saveBtn">💾 Save file</button>
+    <button class="btn sm" id="openBtn">📂 Open</button>
+    <button class="btn sm" id="printBtn">🖨 Print</button>
+    <button class="btn sm primary" id="xlsxBtn">⬇ Export to Excel</button>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+  <div class="panel" id="panel"></div>
+</section>
+
+<div id="printArea"></div>
+<div class="toast" id="toast"></div>
+
+<!-- hidden file input for loading -->
+<input type="file" id="fileInput" accept=".html,.json,text/html,application/json" style="display:none">
+
+<script>
+"use strict";
+
+/* ------------------------------------------------------------------ *
+ *  Barn types  (titles match the Truss Notes workbook)
+ *    title = "Notes for " + name + " " + suffix
+ *    -> single "Gestation"  => "Notes for Gestation Barn Trusses"
+ *    -> single "GDU"        => "Notes for GDU Trusses"
+ * ------------------------------------------------------------------ */
+const BARN_TYPES = [
+  {key:"Gestation", label:"Gestation", suffix:"Barn Trusses"},
+  {key:"Breeding",  label:"Breeding",  suffix:"Barn Trusses"},
+  {key:"Farrowing", label:"Farrowing", suffix:"Barn Trusses"},
+  {key:"Isolation", label:"Isolation", suffix:"Barn Trusses"},
+  {key:"GDU",       label:"GDU",        suffix:"Trusses"},
+];
+const BTYPE = Object.fromEntries(BARN_TYPES.map(b=>[b.key,b]));
+const typeRank = k => BARN_TYPES.findIndex(b=>b.key===k);
+const AUTOSAVE_KEY = "trussNotes.autosave.v2";
+
+/* ------------------------------------------------------------------ *
+ *  State.  barns are keyed by a generated instance id; each instance
+ *  has {type, name, general, rows}.  This lets a site hold e.g. two
+ *  Gestation barns (Gestation 1 / Gestation 2).
+ * ------------------------------------------------------------------ */
+let STATE = { site:"", order:[], barns:{}, active:null };
+let PRISTINE_HTML = "";           // clean copy of this page, captured at load, used for "Save"
+let _rid = 1, _bid = 1;
+const newRow = (truss="",notes="")=>({id:_rid++, truss, notes});
+const newId  = ()=>"b"+(_bid++);
+const makeBarn = (type,name)=>({type, name, general:"", rows:[ newRow() ]});
+
+/* ------------------------------------------------------------------ *
+ *  Small helpers
+ * ------------------------------------------------------------------ */
+const $ = sel => document.querySelector(sel);
+const el = (tag, props={}, kids=[]) => {
+  const n = document.createElement(tag);
+  for (const k in props){
+    if (k==="class") n.className = props[k];
+    else if (k==="text") n.textContent = props[k];
+    else if (k.startsWith("on") && typeof props[k]==="function") n.addEventListener(k.slice(2), props[k]);
+    else if (props[k]!==null && props[k]!==undefined) n.setAttribute(k, props[k]);
+  }
+  for (const c of [].concat(kids)) if (c) n.appendChild(typeof c==="string"?document.createTextNode(c):c);
+  return n;
+};
+const rowEmpty = r => !r.truss.trim() && !r.notes.trim();
+const titleFor = b => "Notes for " + b.name + " " + BTYPE[b.type].suffix;
+function safeName(s){ return (s||"").replace(/[\\/:*?"<>|]+/g,"-").trim(); }
+function instancesOfType(type){ return STATE.order.filter(id=>STATE.barns[id].type===type); }
+
+let _toastT=null;
+function toast(msg){
+  const t=$("#toast"); t.textContent=msg; t.classList.add("show");
+  clearTimeout(_toastT); _toastT=setTimeout(()=>t.classList.remove("show"),2000);
+}
+
+/* ------------------------------------------------------------------ *
+ *  Autosave (best-effort; JSON file is the reliable store)
+ * ------------------------------------------------------------------ */
+function autosave(){
+  try{ localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(serialize())); }catch(e){/* file:// may block */}
+}
+function serialize(){
+  return {
+    version:2, savedAt:new Date().toISOString(), site:STATE.site, order:STATE.order.slice(),
+    barns:Object.fromEntries(STATE.order.map(id=>{
+      const b=STATE.barns[id];
+      return [id,{
+        type:b.type, name:b.name, general:b.general,
+        rows:b.rows.filter(r=>!rowEmpty(r)).map(r=>({truss:r.truss, notes:r.notes}))
+      }];
+    }))
+  };
+}
+function deserialize(data){
+  STATE = { site:data.site||"", order:[], barns:{}, active:null };
+  _bid = 1;
+  (data.order||[]).forEach(oldId=>{
+    const b = (data.barns && data.barns[oldId]) || {};
+    let type = b.type || (BTYPE[oldId] ? oldId : null);   // v1 files keyed barns by type
+    if (!BTYPE[type]) return;                              // skip unknown types
+    const id = newId();
+    const name = b.name || BTYPE[type].label;
+    const rows = (b.rows||[]).map(r=>newRow(r.truss||"", r.notes||""));
+    STATE.barns[id] = { type, name, general:b.general||"", rows };
+    STATE.order.push(id);
+    ensureTrailingEmpty(id);
+  });
+  STATE.active = STATE.order[0] || null;
+}
+
+/* ------------------------------------------------------------------ *
+ *  Row maintenance — always keep exactly one trailing empty row
+ * ------------------------------------------------------------------ */
+function ensureTrailingEmpty(id){
+  const rows = STATE.barns[id].rows;
+  if (rows.length===0 || !rowEmpty(rows[rows.length-1])) rows.push(newRow());
+}
+
+/* ================================================================== *
+ *  SETUP SCREEN
+ * ================================================================== */
+function buildSetup(){
+  const pick = $("#barnPick"); pick.innerHTML="";
+  BARN_TYPES.forEach(b=>{
+    const cb = el("input",{type:"checkbox",value:b.key});
+    const opt = el("label",{class:"barnopt"},[cb, el("span",{class:"nm",text:b.label})]);
+    cb.addEventListener("change",()=>{ opt.classList.toggle("on", cb.checked); refreshStart(); });
+    pick.appendChild(opt);
+  });
+  $("#siteInput").addEventListener("input", refreshStart);
+  refreshStart();
+}
+function selectedTypes(){
+  return [...document.querySelectorAll("#barnPick input:checked")].map(c=>c.value);
+}
+function refreshStart(){
+  const ok = $("#siteInput").value.trim()!=="" && selectedTypes().length>0;
+  $("#startBtn").disabled = !ok;
+}
+function prefillSetup(){
+  $("#siteInput").value = STATE.site||"";
+  const present = new Set(STATE.order.map(id=>STATE.barns[id].type));
+  document.querySelectorAll("#barnPick input").forEach(c=>{
+    c.checked = present.has(c.value);
+    c.closest(".barnopt").classList.toggle("on", c.checked);
+  });
+  refreshStart();
+}
+function startFromSetup(){
+  const site = $("#siteInput").value.trim();
+  const types = selectedTypes();
+  if (!site || types.length===0) return;
+  STATE.site = site;
+
+  // Drop instances whose type was unchecked; keep the rest (and their data).
+  const keep = new Set(types);
+  STATE.order = STATE.order.filter(id=>{
+    if (keep.has(STATE.barns[id].type)) return true;
+    delete STATE.barns[id]; return false;
+  });
+  // Add one instance for any newly-checked type that has none yet.
+  types.forEach(type=>{
+    if (instancesOfType(type).length===0){
+      const id=newId(); STATE.barns[id]=makeBarn(type, BTYPE[type].label); STATE.order.push(id);
+    }
+  });
+  // Group tabs by type order (stable within a type).
+  STATE.order.sort((a,b)=> typeRank(STATE.barns[a].type)-typeRank(STATE.barns[b].type));
+  if (!STATE.active || !STATE.barns[STATE.active]) STATE.active = STATE.order[0];
+  STATE.order.forEach(ensureTrailingEmpty);
+  showForm();
+}
+
+/* ================================================================== *
+ *  INSTANCE MANAGEMENT  (Add / Duplicate / Rename / Remove)
+ * ================================================================== */
+function autoName(type){
+  const label = BTYPE[type].label;
+  const sibs = instancesOfType(type);
+  if (sibs.length===0) return label;
+  // first time a type gets a second barn: number them both
+  if (sibs.length===1 && STATE.barns[sibs[0]].name===label){
+    STATE.barns[sibs[0]].name = label+" 1";
+    return label+" 2";
+  }
+  let max = sibs.length;
+  sibs.forEach(id=>{ const m=/(\d+)\s*$/.exec(STATE.barns[id].name); if(m) max=Math.max(max, +m[1]); });
+  return label+" "+(max+1);
+}
+function addInstance(type){
+  const id=newId();
+  const name=autoName(type);                 // may renumber the existing lone sibling
+  const sibs=instancesOfType(type);          // existing instances of this type (id not added yet)
+  STATE.barns[id]=makeBarn(type, name);
+  const insertAt = sibs.length ? STATE.order.indexOf(sibs[sibs.length-1])+1 : STATE.order.length;
+  STATE.order.splice(insertAt,0,id); STATE.active=id;
+  renderTabs(); renderPanel(); autosave();
+  toast("Added "+STATE.barns[id].name);
+}
+function duplicateActive(){
+  const cur=STATE.barns[STATE.active];
+  const id=newId();
+  STATE.barns[id]={ type:cur.type, name:autoName(cur.type), general:cur.general,
+    rows:cur.rows.filter(r=>!rowEmpty(r)).map(r=>newRow(r.truss,r.notes)) };
+  ensureTrailingEmpty(id);
+  const i=STATE.order.indexOf(STATE.active);
+  STATE.order.splice(i+1,0,id); STATE.active=id;
+  renderTabs(); renderPanel(); autosave();
+  toast("Duplicated to "+STATE.barns[id].name);
+}
+function renameActive(){
+  const cur=STATE.barns[STATE.active];
+  const name=prompt("Rename this barn tab:", cur.name);
+  if(name===null) return;
+  const v=name.trim(); if(!v){ toast("Name can’t be blank"); return; }
+  cur.name=v; renderTabs(); renderPanel(); autosave();
+}
+function removeActive(){
+  if(STATE.order.length<=1){ toast("Keep at least one barn"); return; }
+  const cur=STATE.barns[STATE.active];
+  if(!confirm("Remove “"+cur.name+"” and all of its notes?")) return;
+  const i=STATE.order.indexOf(STATE.active);
+  STATE.order.splice(i,1); delete STATE.barns[STATE.active];
+  STATE.active=STATE.order[Math.max(0,i-1)];
+  renderTabs(); renderPanel(); autosave();
+}
+
+/* ================================================================== *
+ *  FORM SCREEN
+ * ================================================================== */
+function showSetup(){
+  $("#form").style.display="none";
+  $("#setup").style.display="block";
+  $("#siteTag").style.display="none";
+  prefillSetup();
+}
+function showForm(){
+  $("#setup").style.display="none";
+  $("#form").style.display="block";
+  $("#siteTag").style.display="inline-flex";
+  $("#siteTagName").textContent = STATE.site;
+  renderTabs();
+  renderPanel();
+  autosave();
+}
+
+function renderTabs(){
+  const tabs = $("#tabs"); tabs.innerHTML="";
+  STATE.order.forEach(id=>{
+    const b = STATE.barns[id];
+    const t = el("div",{class:"tab"+(id===STATE.active?" active":""),text:b.name});
+    t.addEventListener("click",()=>{ STATE.active=id; renderTabs(); renderPanel(); });
+    tabs.appendChild(t);
+  });
+  // "+ Add barn" with a small type menu
+  const wrap = el("div",{class:"addwrap"});
+  const btn  = el("button",{class:"addbtn",text:"＋ Add barn"});
+  const menu = el("div",{class:"addmenu"},[el("div",{class:"mhdr",text:"Add a barn"})]);
+  BARN_TYPES.forEach(tp=>{
+    const mi = el("button",{class:"mi",text:tp.label});
+    mi.addEventListener("click",(e)=>{ e.stopPropagation(); menu.classList.remove("open"); addInstance(tp.key); });
+    menu.appendChild(mi);
+  });
+  btn.addEventListener("click",(e)=>{ e.stopPropagation();
+    const open=menu.classList.contains("open");
+    document.querySelectorAll(".addmenu.open").forEach(m=>m.classList.remove("open"));
+    if(!open) menu.classList.add("open");
+  });
+  wrap.appendChild(btn); wrap.appendChild(menu); tabs.appendChild(wrap);
+}
+
+function renderPanel(){
+  const key = STATE.active;
+  const barn = STATE.barns[key];
+  const panel = $("#panel"); panel.innerHTML="";
+
+  panel.appendChild(el("h2",{text:titleFor(barn)}));
+  panel.appendChild(el("div",{class:"barnsub",text:"Site: "+STATE.site}));
+  panel.appendChild(el("div",{class:"barnctl"},[
+    el("button",{text:"✎ Rename tab", onclick:renameActive}),
+    el("button",{text:"⧉ Duplicate", onclick:duplicateActive}),
+    el("button",{class:"danger", text:"🗑 Remove barn", onclick:removeActive})
+  ]));
+
+  // General notes
+  const gen = el("div",{class:"gen"});
+  gen.appendChild(el("label",{text:"General barn notes"}));
+  const ta = el("textarea",{class:"general",placeholder:"Notes about the whole barn — e.g. started on north side, moderate corrosion, 4 web member CLRs, 0 bottom chord CLRs…"});
+  ta.value = barn.general;
+  ta.addEventListener("input",()=>{ barn.general=ta.value; autosave(); });
+  gen.appendChild(ta);
+  gen.appendChild(el("div",{class:"hint",text:"Put each general note on its own line."}));
+  panel.appendChild(gen);
+
+  // Truss table
+  panel.appendChild(el("div",{class:"tablehdr"},[
+    el("h3",{text:"Truss notes"}),
+    el("span",{class:"spacer"}),
+    el("span",{class:"count",id:"rowCount"})
+  ]));
+  panel.appendChild(el("div",{class:"rowhead"},[
+    el("div",{text:"Truss"}), el("div",{text:"Notes"}), el("div",{})
+  ]));
+
+  const rowsWrap = el("div",{class:"rows",id:"rowsWrap"});
+  panel.appendChild(rowsWrap);
+  barn.rows.forEach(r=> rowsWrap.appendChild(buildRowEl(barn, r)));
+
+  panel.appendChild(el("div",{class:"footnote"},[
+    el("span",{text:"➕ A new row appears automatically when you start typing in the last one. Truss can be a single number, a list (1, 4, 9), or a range (1 to 8)."})
+  ]));
+  updateRowCount();
+}
+
+function buildRowEl(barn, r){
+  const truss = el("input",{class:"truss",type:"text",placeholder:"e.g. 1 to 8",value:r.truss});
+  const notes = el("textarea",{class:"notes",rows:"1",placeholder:"What did you observe?"});
+  notes.value = r.notes;
+  const del = el("button",{class:"del",title:"Remove this row",text:"×"});
+  const row = el("div",{class:"trow"},[truss, notes, del]);
+
+  const refresh = ()=>{
+    row.classList.toggle("filled", !rowEmpty(r));
+    row.classList.toggle("empty", rowEmpty(r));
+  };
+  const onEdit = ()=>{
+    r.truss = truss.value; r.notes = notes.value;
+    autoGrow(notes);
+    const rows = barn.rows;
+    if (r===rows[rows.length-1] && !rowEmpty(r)){
+      const nr = newRow(); rows.push(nr);
+      $("#rowsWrap").appendChild(buildRowEl(barn, nr));
+    }
+    refresh(); updateRowCount(); autosave();
+  };
+  truss.addEventListener("input", onEdit);
+  notes.addEventListener("input", onEdit);
+
+  del.addEventListener("click", ()=>{
+    const rows = barn.rows;
+    const i = rows.indexOf(r);
+    if (i>-1) rows.splice(i,1);
+    row.remove();
+    ensureTrailingEmpty(STATE.active);
+    if (barn.rows.length > $("#rowsWrap").children.length) renderPanel();
+    updateRowCount(); autosave();
+  });
+
+  refresh();
+  requestAnimationFrame(()=>autoGrow(notes));
+  return row;
+}
+
+function autoGrow(ta){ ta.style.height="auto"; ta.style.height = Math.max(42, ta.scrollHeight) + "px"; }
+function updateRowCount(){
+  const c = $("#rowCount"); if(!c) return;
+  const n = STATE.barns[STATE.active].rows.filter(r=>!rowEmpty(r)).length;
+  c.textContent = n===1 ? "1 entry" : n+" entries";
+}
+
+/* ================================================================== *
+ *  SAVE / LOAD  — saves a self-contained HTML you can reopen anywhere
+ *  (tap the saved file to pick up exactly where you left off — works
+ *   offline on iPad, no separate import step needed)
+ * ================================================================== */
+function downloadBlob(filename, blob){
+  const a=document.createElement("a"), url=URL.createObjectURL(blob);
+  a.href=url; a.download=filename; document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url); a.remove();},120);
+}
+// On iPad/iPhone the native share sheet ("Save to Files") is the reliable
+// way to keep a file; on a computer we just download it.
+async function shareOrDownload(filename, blob, mime){
+  try{
+    const file=new File([blob], filename, {type:mime});
+    if (navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file], title:filename});
+      return "shared";
+    }
+  }catch(e){ if(e && e.name==="AbortError") return "abort"; /* else fall through */ }
+  downloadBlob(filename, blob);
+  return "download";
+}
+// A full copy of this page with the current notes embedded, so re-opening
+// the saved file restores everything automatically.
+function buildSelfContainedHtml(){
+  const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(serialize()))));
+  // Stored in a hidden DIV: base64 has no "<", so it can never break HTML re-parsing.
+  const tag = '<div id="trussSaved" hidden>'+b64+'</div>\n';
+  // Inject before the LAST </body> — the real closing tag, not the literal
+  // "</body>" strings that appear in this script's own source above.
+  const i = PRISTINE_HTML.lastIndexOf("</body>");
+  return i<0 ? PRISTINE_HTML+tag : PRISTINE_HTML.slice(0,i)+tag+PRISTINE_HTML.slice(i);
+}
+async function saveFile(){
+  const fn = "Truss Notes" + (STATE.site? " - "+safeName(STATE.site):"") + ".html";
+  const how = await shareOrDownload(fn, new Blob([buildSelfContainedHtml()],{type:"text/html"}), "text/html");
+  if (how==="shared")        toast("Choose “Save to Files” to keep it");
+  else if (how==="download") toast("Saved "+fn+" — reopen it to resume");
+}
+function openFileDialog(){ $("#fileInput").value=""; $("#fileInput").click(); }
+function handleFile(file){
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const text=reader.result; let data;
+      if (/^\s*\{/.test(text)) data=JSON.parse(text);                 // a .json save
+      else{                                                            // a saved .html
+        const m=text.match(/id="trussSaved"[^>]*>([^<]*)</);
+        if(!m) throw new Error("No saved truss notes found in that file");
+        data=JSON.parse(decodeURIComponent(escape(atob(m[1].trim()))));
+      }
+      if (!data || !data.order) throw new Error("Not a Truss Notes file");
+      deserialize(data); showForm(); toast("Loaded "+file.name);
+    }catch(e){ alert("Could not open that file:\n"+e.message); }
+  };
+  reader.readAsText(file);
+}
+
+/* ================================================================== *
+ *  PRINT  (clean report of every barn)
+ * ================================================================== */
+function buildPrint(){
+  const root=$("#printArea"); root.innerHTML="";
+  STATE.order.forEach(id=>{
+    const barn=STATE.barns[id];
+    const sec=el("div",{class:"pbarn"});
+    sec.appendChild(el("h2",{text:titleFor(barn)}));
+    sec.appendChild(el("div",{class:"psite",text:"Site: "+STATE.site}));
+    if (barn.general.trim()) sec.appendChild(el("div",{class:"pgen",text:barn.general.trim()}));
+    const rows=barn.rows.filter(r=>!rowEmpty(r));
+    const tbl=el("table",{class:"ptab"});
+    tbl.appendChild(el("tr",{},[el("th",{class:"tcol",text:"Truss"}),el("th",{text:"Notes"})]));
+    if (rows.length===0) tbl.appendChild(el("tr",{},[el("td",{class:"tcol",text:"—"}),el("td",{text:"(no entries)"})]));
+    rows.forEach(r=> tbl.appendChild(el("tr",{},[el("td",{class:"tcol",text:r.truss}),el("td",{text:r.notes})])));
+    sec.appendChild(tbl); root.appendChild(sec);
+  });
+}
+function printReport(){ buildPrint(); window.print(); }
+
+/* ================================================================== *
+ *  EXCEL EXPORT  (real multi-sheet .xlsx, no libraries)
+ * ================================================================== */
+const CRC_TABLE=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c>>>0;}return t;})();
+function crc32(b){let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=CRC_TABLE[(c^b[i])&0xFF]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+function zipStore(files){
+  const enc=new TextEncoder();
+  const u16=n=>[n&0xFF,(n>>>8)&0xFF];
+  const u32=n=>[n&0xFF,(n>>>8)&0xFF,(n>>>16)&0xFF,(n>>>24)&0xFF];
+  const parts=[], central=[]; let offset=0;
+  for(const f of files){
+    const name=enc.encode(f.name), data=f.data, crc=crc32(data);
+    const lh=new Uint8Array([].concat(u32(0x04034b50),u16(20),u16(0),u16(0),u16(0),u16(0),
+      u32(crc),u32(data.length),u32(data.length),u16(name.length),u16(0)));
+    parts.push(lh,name,data);
+    central.push({rec:new Uint8Array([].concat(u32(0x02014b50),u16(20),u16(20),u16(0),u16(0),u16(0),u16(0),
+      u32(crc),u32(data.length),u32(data.length),u16(name.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(offset))),name});
+    offset+=lh.length+name.length+data.length;
+  }
+  const cdStart=offset; let cdSize=0;
+  for(const c of central){ parts.push(c.rec,c.name); cdSize+=c.rec.length+c.name.length; }
+  parts.push(new Uint8Array([].concat(u32(0x06054b50),u16(0),u16(0),u16(central.length),u16(central.length),
+    u32(cdSize),u32(cdStart),u16(0))));
+  let total=0; for(const p of parts) total+=p.length;
+  const out=new Uint8Array(total); let pos=0;
+  for(const p of parts){ out.set(p,pos); pos+=p.length; }
+  return out;
+}
+const xesc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+const enc=new TextEncoder();
+const part=(name,str)=>({name,data:enc.encode(str)});
+function cell(ref,s,text){
+  return `<c r="${ref}"${s!=null?` s="${s}"`:""} t="inlineStr"><is><t xml:space="preserve">${xesc(text)}</t></is></c>`;
+}
+// Excel sheet-name rules: <=31 chars, no \ / ? * [ ] :, unique (case-insensitive)
+function uniqueSheetNames(names){
+  const used=new Set(), out=[];
+  names.forEach(raw=>{
+    let n=(raw||"Sheet").replace(/[\\\/\?\*\[\]:]/g,"-").slice(0,31).trim() || "Sheet";
+    let base=n, i=1;
+    while(used.has(n.toLowerCase())){ const suf=" ("+(++i)+")"; n=base.slice(0,31-suf.length)+suf; }
+    used.add(n.toLowerCase()); out.push(n);
+  });
+  return out;
+}
+const STYLES_XML =
+`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<fonts count="3"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="14"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts>
+<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFD9E1F2"/><bgColor indexed="64"/></patternFill></fill></fills>
+<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color indexed="64"/></left><right style="thin"><color indexed="64"/></right><top style="thin"><color indexed="64"/></top><bottom style="thin"><color indexed="64"/></bottom><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="5">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="0" fontId="2" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+</cellXfs>
+<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+</styleSheet>`;
+
+function sheetXml(id){
+  const barn=STATE.barns[id];
+  const rowsXml=[]; const merges=[]; let r=0;
+  const push=(cells)=>{ r++; rowsXml.push(`<row r="${r}">${cells}</row>`); return r; };
+  const mergeFull=(rr)=>merges.push(`A${rr}:B${rr}`);
+
+  mergeFull(push(cell(`A${r+1}`,1, titleFor(barn))));            // title
+  mergeFull(push(cell(`A${r+1}`,4, "Site: "+(STATE.site||"")))); // site
+  push("");                                                      // blank
+  const genLines=(barn.general||"").split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  genLines.forEach(line=> mergeFull(push(cell(`A${r+1}`,0,line))));
+  if (genLines.length) push("");                                 // blank after general notes
+  push(cell(`A${r+1}`,2,"Truss")+cell(`B${r+1}`,2,"Notes"));     // header
+  barn.rows.filter(x=>!rowEmpty(x)).forEach(x=>{
+    push(cell(`A${r+1}`,3,x.truss)+cell(`B${r+1}`,3,x.notes));
+  });
+
+  const mc = merges.length? `<mergeCells count="${merges.length}">${merges.map(m=>`<mergeCell ref="${m}"/>`).join("")}</mergeCells>`:"";
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><cols><col min="1" max="1" width="22" customWidth="1"/><col min="2" max="2" width="70" customWidth="1"/></cols><sheetData>${rowsXml.join("")}</sheetData>${mc}</worksheet>`;
+}
+
+function exportXlsx(){
+  const keys=STATE.order;
+  const sheetNames=uniqueSheetNames(keys.map(id=>STATE.barns[id].name));
+  const files=[];
+  keys.forEach((id,i)=> files.push(part(`xl/worksheets/sheet${i+1}.xml`, sheetXml(id))));
+  files.push(part("xl/styles.xml", STYLES_XML));
+
+  const sheetsTags = keys.map((id,i)=>`<sheet name="${xesc(sheetNames[i])}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join("");
+  files.push(part("xl/workbook.xml",
+`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheetsTags}</sheets></workbook>`));
+
+  const relRows = keys.map((id,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join("");
+  const stylesRid = "rId"+(keys.length+1);
+  files.push(part("xl/_rels/workbook.xml.rels",
+`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${relRows}<Relationship Id="${stylesRid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`));
+
+  const overrides = keys.map((id,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("");
+  files.push(part("[Content_Types].xml",
+`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${overrides}</Types>`));
+
+  files.push(part("_rels/.rels",
+`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`));
+
+  const zip = zipStore(files);
+  const fn = "Truss Notes" + (STATE.site? " - "+safeName(STATE.site):"") + ".xlsx";
+  shareOrDownload(fn, new Blob([zip],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}),
+                  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  toast("Exported "+fn);
+  return zip;
+}
+
+/* ================================================================== *
+ *  WIRE-UP
+ * ================================================================== */
+// Snapshot the blank page once at load, so "Save" can embed notes into a clean copy.
+function capturePristine(){
+  const root=document.documentElement.cloneNode(true);
+  const s=root.querySelector("#trussSaved"); if(s) s.remove();   // don't nest old data
+  PRISTINE_HTML = "<!DOCTYPE html>\n"+root.outerHTML;
+}
+
+function init(){
+  capturePristine();
+  buildSetup();
+  $("#startBtn").addEventListener("click", startFromSetup);
+  $("#loadFileBtn").addEventListener("click", openFileDialog);
+  $("#setupBtn").addEventListener("click", showSetup);
+  $("#saveBtn").addEventListener("click", saveFile);
+  $("#openBtn").addEventListener("click", openFileDialog);
+  $("#printBtn").addEventListener("click", printReport);
+  $("#xlsxBtn").addEventListener("click", ()=>exportXlsx());
+  $("#fileInput").addEventListener("change", e=>{ if(e.target.files[0]) handleFile(e.target.files[0]); });
+  // close the Add-barn menu on any outside click
+  document.addEventListener("click",()=>document.querySelectorAll(".addmenu.open").forEach(m=>m.classList.remove("open")));
+
+  // expose for automated testing
+  window.__truss = { STATE:()=>STATE, exportXlsx, serialize, deserialize, startFromSetup,
+                     showForm, buildPrint, addInstance, duplicateActive, saveFile, buildSelfContainedHtml };
+
+  // If this file was saved with notes embedded, restore them and go straight to the form.
+  const embedded=document.getElementById("trussSaved");
+  if (embedded && embedded.textContent.trim()){
+    try{
+      const data=JSON.parse(decodeURIComponent(escape(atob(embedded.textContent.trim()))));
+      if (data && data.order){ deserialize(data); showForm(); return; }
+    }catch(e){/* fall through to normal start */}
+  }
+
+  // Otherwise, offer to resume the last autosaved session
+  try{
+    const raw=localStorage.getItem(AUTOSAVE_KEY);
+    if (raw){
+      const data=JSON.parse(raw);
+      if (data && data.order && data.order.length){
+        const names=data.order.map(id=>{ const b=data.barns&&data.barns[id]; return (b&&b.name) || (BTYPE[id]?BTYPE[id].label:id); }).join(", ");
+        $("#resumeMeta").textContent =
+          (data.site?("Site "+data.site+" · "):"") + names +
+          (data.savedAt?(" · "+new Date(data.savedAt).toLocaleString()):"");
+        $("#resumeBox").style.display="block";
+        $("#resumeBtn").addEventListener("click",()=>{ deserialize(data); showForm(); });
+        $("#resumeDiscard").addEventListener("click",()=>{ localStorage.removeItem(AUTOSAVE_KEY); $("#resumeBox").style.display="none"; });
+      }
+    }
+  }catch(e){/* ignore */}
+}
+document.addEventListener("DOMContentLoaded", init);
+</script>
+<script>
+  // Register the offline service worker (only when served over http/https; skipped for local file:// use).
+  if ('serviceWorker' in navigator && location.protocol.indexOf('http')===0) {
+    window.addEventListener('load', function(){ navigator.serviceWorker.register('./sw.js').catch(function(){}); });
+  }
+</script>
+</body>
+</html>
