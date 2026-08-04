@@ -77,16 +77,27 @@
     width:100%;padding:11px 12px;border:1px solid var(--line-strong);border-radius:8px;background:#fff;
   }
   input.text:focus,textarea:focus{outline:2px solid var(--brand-50);border-color:var(--brand)}
-  .barnpick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  @media(max-width:520px){.barnpick{grid-template-columns:1fr}}
-  .barnopt{
-    display:flex;align-items:center;gap:11px;border:1px solid var(--line-strong);
-    border-radius:9px;padding:12px 13px;cursor:pointer;user-select:none;transition:.12s;background:#fff;
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:520px){.row2{grid-template-columns:1fr}}
+  .qtylist{display:flex;flex-direction:column;gap:10px}
+  .qtyrow{display:flex;align-items:center;gap:12px;border:1px solid var(--line-strong);border-radius:9px;padding:9px 14px;background:#fff;transition:.12s}
+  .qtyrow.on{border-color:var(--brand);background:var(--brand-50);box-shadow:inset 0 0 0 1px var(--brand)}
+  .qtyrow .qnm{font-weight:600;flex:1}
+  .stepper{display:flex;align-items:center;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden;background:#fff}
+  .stepper button{width:38px;height:38px;border:none;background:#f3f6f9;font-size:21px;line-height:1;cursor:pointer;color:var(--brand);font-weight:700}
+  .stepper button:hover{background:var(--brand-50)}
+  .stepper input{width:46px;height:38px;border:none;border-left:1px solid var(--line);border-right:1px solid var(--line);text-align:center;font-size:15px;font-weight:600;-moz-appearance:textfield}
+  .stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+
+  /* structured general-notes fields */
+  .seclabel{font-weight:600;margin:2px 0 10px;font-size:15px}
+  .genfields{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;margin-bottom:18px}
+  @media(max-width:560px){.genfields{grid-template-columns:1fr}}
+  .genfields .gf label{display:block;font-weight:600;font-size:13px;margin-bottom:5px}
+  .genfields select,.genfields input.gfin{
+    width:100%;padding:10px 11px;border:1px solid var(--line-strong);border-radius:8px;background:#fff;font-size:15px;
   }
-  .barnopt:hover{border-color:var(--accent);background:var(--brand-50)}
-  .barnopt.on{border-color:var(--brand);background:var(--brand-50);box-shadow:inset 0 0 0 1px var(--brand)}
-  .barnopt input{width:18px;height:18px;accent-color:var(--brand)}
-  .barnopt .nm{font-weight:600}
+  .genfields select:focus,.genfields input.gfin:focus{outline:2px solid var(--brand-50);border-color:var(--brand)}
   .setup-note{font-size:12.5px;color:var(--muted);margin:-8px 0 18px}
   .setup-actions{display:flex;gap:12px;align-items:center;margin-top:8px}
   .setup-actions .spacer{flex:1}
@@ -147,19 +158,19 @@
   .tablehdr .count{color:var(--muted);font-size:13px}
 
   .rowhead{
-    display:grid;grid-template-columns:190px 1fr 36px;gap:10px;
+    display:grid;grid-template-columns:220px 1fr 36px;gap:10px;
     padding:0 2px 6px;font-size:12.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;
   }
   .rows{display:flex;flex-direction:column;gap:8px}
-  .trow{display:grid;grid-template-columns:190px 1fr 36px;gap:10px;align-items:start}
-  .trow input.truss{
-    padding:10px 11px;border:1px solid var(--line-strong);border-radius:8px;width:100%;
-  }
+  .trow{display:grid;grid-template-columns:220px 1fr 36px;gap:10px;align-items:start}
+  .trusspair{display:flex;align-items:center;gap:6px}
+  .trusspair input{width:100%;min-width:0;padding:10px 6px;border:1px solid var(--line-strong);border-radius:8px;text-align:center}
+  .trusspair .tosep{color:var(--muted);font-size:12px;font-weight:600;flex:0 0 auto}
   .trow textarea.notes{
     padding:10px 11px;border:1px solid var(--line-strong);border-radius:8px;width:100%;
     resize:none;overflow:hidden;min-height:42px;line-height:1.45;
   }
-  .trow.empty input.truss, .trow.empty textarea.notes{background:#fcfdfe;border-style:dashed}
+  .trow.empty .trusspair input, .trow.empty textarea.notes{background:#fcfdfe;border-style:dashed}
   .trow .del{
     border:1px solid transparent;background:transparent;color:var(--muted);cursor:pointer;
     width:36px;height:42px;border-radius:8px;font-size:18px;line-height:1;visibility:hidden;
@@ -219,18 +230,29 @@
 
   <div class="card">
     <h1>Truss Evaluation Notes</h1>
-    <p class="lead">Set up the site, then pick which barns are here. Each barn becomes its own tab.</p>
+    <p class="lead">Set up this assessment, then choose which barns are on site and how many of each. Each barn becomes its own tab.</p>
 
     <div class="field">
       <label for="siteInput">Site <span class="hint">(e.g., M25)</span></label>
       <input class="text" id="siteInput" type="text" placeholder="Enter site name or number" autocomplete="off">
     </div>
 
-    <div class="field">
-      <label>Which barns are at this site? <span class="hint">(check all that apply)</span></label>
-      <div class="barnpick" id="barnPick"></div>
+    <div class="row2">
+      <div class="field">
+        <label for="dateInput">Date</label>
+        <input class="text" id="dateInput" type="date">
+      </div>
+      <div class="field">
+        <label for="nameInput">Inspector <span class="hint">(recorded by)</span></label>
+        <input class="text" id="nameInput" type="text" placeholder="Inspector / engineer" autocomplete="off">
+      </div>
     </div>
-    <div class="setup-note">Have two of the same kind (e.g. two Gestation barns)? Add the second one with “＋ Add barn” once you’re in the form.</div>
+
+    <div class="field">
+      <label>Which barns are at this site, and how many? <span class="hint">(set a count for each)</span></label>
+      <div class="qtylist" id="barnList"></div>
+    </div>
+    <div class="setup-note">Tip: you can still add, duplicate, rename or remove barns once you’re in the form.</div>
 
     <div class="setup-actions">
       <button class="btn" id="loadFileBtn">📂 Open saved file…</button>
@@ -279,19 +301,35 @@ const BARN_TYPES = [
 ];
 const BTYPE = Object.fromEntries(BARN_TYPES.map(b=>[b.key,b]));
 const typeRank = k => BARN_TYPES.findIndex(b=>b.key===k);
-const AUTOSAVE_KEY = "trussNotes.autosave.v2";
+const AUTOSAVE_KEY = "trussNotes.autosave.v3";
+
+// Dropdown option sets
+const TRUSS_TYPES = ["Common trusses","Piggyback Trusses","Gambrel Trusses"];
+const CORROSION   = ["No corrosion","Slight corrosion","Heavy corrosion"];
+const YESNO       = ["Yes","No"];
+// Structured general-notes fields (display + Excel order).  xl = label used in Excel/print.
+const GEN_FIELDS = [
+  {key:"trussType", label:"Truss type",                          kind:"select", opts:TRUSS_TYPES, xl:"Truss type"},
+  {key:"corrosion", label:"Truss-plate corrosion",               kind:"select", opts:CORROSION,   xl:"Truss plate corrosion"},
+  {key:"gusset",    label:"Gusset plates over truss plates",      kind:"select", opts:YESNO,       xl:"Gusset plates over truss plates"},
+  {key:"botCLR",    label:"Bottom chord CLRs",                    kind:"num",    xl:"Bottom chord CLRs"},
+  {key:"webCLR",    label:"Web member CLRs",                      kind:"num",    xl:"Web member CLRs"},
+  {key:"xbrace",    label:"X-bracing location",                   kind:"text",   xl:"X-bracing location", ph:"e.g. middle of barn, on compression members"},
+  {key:"walkways",  label:"2×6 walkways to filters (1 ft apart)", kind:"select", opts:YESNO,       xl:"2x6 walkways to filters (1ft apart)"},
+];
+const GEN_DEFAULT = ()=>({trussType:"",corrosion:"",gusset:"",botCLR:"",webCLR:"",xbrace:"",walkways:""});
 
 /* ------------------------------------------------------------------ *
  *  State.  barns are keyed by a generated instance id; each instance
  *  has {type, name, general, rows}.  This lets a site hold e.g. two
  *  Gestation barns (Gestation 1 / Gestation 2).
  * ------------------------------------------------------------------ */
-let STATE = { site:"", order:[], barns:{}, active:null };
+let STATE = { site:"", date:"", inspector:"", order:[], barns:{}, active:null };
 let PRISTINE_HTML = "";           // clean copy of this page, captured at load, used for "Save"
 let _rid = 1, _bid = 1;
-const newRow = (truss="",notes="")=>({id:_rid++, truss, notes});
+const newRow = (t1="",t2="",notes="")=>({id:_rid++, t1, t2, notes});   // t1=truss start, t2=range end (optional)
 const newId  = ()=>"b"+(_bid++);
-const makeBarn = (type,name)=>({type, name, general:"", rows:[ newRow() ]});
+const makeBarn = (type,name)=>({type, name, g:GEN_DEFAULT(), general:"", rows:[ newRow() ]});
 
 /* ------------------------------------------------------------------ *
  *  Small helpers
@@ -308,10 +346,28 @@ const el = (tag, props={}, kids=[]) => {
   for (const c of [].concat(kids)) if (c) n.appendChild(typeof c==="string"?document.createTextNode(c):c);
   return n;
 };
-const rowEmpty = r => !r.truss.trim() && !r.notes.trim();
+const rowEmpty = r => !r.t1.trim() && !r.t2.trim() && !r.notes.trim();
 const titleFor = b => "Notes for " + b.name + " " + BTYPE[b.type].suffix;
+function trussText(r){ const a=(r.t1||"").trim(), b=(r.t2||"").trim(); return (a&&b)? a+" to "+b : (a||b); }
 function safeName(s){ return (s||"").replace(/[\\/:*?"<>|]+/g,"-").trim(); }
 function instancesOfType(type){ return STATE.order.filter(id=>STATE.barns[id].type===type); }
+function barnHasData(id){
+  const b=STATE.barns[id];
+  if((b.general||"").trim()) return true;
+  if(GEN_FIELDS.some(f=>((b.g&&b.g[f.key])||"").toString().trim())) return true;
+  return b.rows.some(r=>!rowEmpty(r));
+}
+function todayIso(){ const d=new Date(),p=n=>String(n).padStart(2,"0"); return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate()); }
+function fmtDate(iso){ const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||""); if(!m) return iso||""; return new Date(+m[1],+m[2]-1,+m[3]).toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"}); }
+function subLine(){ const p=[]; if(STATE.site) p.push("Site: "+STATE.site); if(STATE.date) p.push(fmtDate(STATE.date)); if(STATE.inspector) p.push("Recorded by "+STATE.inspector); return p.join("  ·  "); }
+function isAutoName(name,label){ if(name===label) return true; const esc=label.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); return new RegExp("^"+esc+" \\d+$").test(name); }
+function renumberAll(){
+  BARN_TYPES.forEach(tp=>{
+    const ids=instancesOfType(tp.key);
+    if(ids.length===1){ const id=ids[0]; if(isAutoName(STATE.barns[id].name,tp.label)) STATE.barns[id].name=tp.label; }
+    else { let n=0; ids.forEach(id=>{ if(isAutoName(STATE.barns[id].name,tp.label)){ n++; STATE.barns[id].name=tp.label+" "+n; } }); }
+  });
+}
 
 let _toastT=null;
 function toast(msg){
@@ -327,18 +383,19 @@ function autosave(){
 }
 function serialize(){
   return {
-    version:2, savedAt:new Date().toISOString(), site:STATE.site, order:STATE.order.slice(),
+    version:3, savedAt:new Date().toISOString(),
+    site:STATE.site, date:STATE.date, inspector:STATE.inspector, order:STATE.order.slice(),
     barns:Object.fromEntries(STATE.order.map(id=>{
       const b=STATE.barns[id];
       return [id,{
-        type:b.type, name:b.name, general:b.general,
-        rows:b.rows.filter(r=>!rowEmpty(r)).map(r=>({truss:r.truss, notes:r.notes}))
+        type:b.type, name:b.name, g:Object.assign({},b.g), general:b.general,
+        rows:b.rows.filter(r=>!rowEmpty(r)).map(r=>({t1:r.t1, t2:r.t2, notes:r.notes}))
       }];
     }))
   };
 }
 function deserialize(data){
-  STATE = { site:data.site||"", order:[], barns:{}, active:null };
+  STATE = { site:data.site||"", date:data.date||"", inspector:data.inspector||"", order:[], barns:{}, active:null };
   _bid = 1;
   (data.order||[]).forEach(oldId=>{
     const b = (data.barns && data.barns[oldId]) || {};
@@ -346,8 +403,15 @@ function deserialize(data){
     if (!BTYPE[type]) return;                              // skip unknown types
     const id = newId();
     const name = b.name || BTYPE[type].label;
-    const rows = (b.rows||[]).map(r=>newRow(r.truss||"", r.notes||""));
-    STATE.barns[id] = { type, name, general:b.general||"", rows };
+    const g = Object.assign(GEN_DEFAULT(), b.g||{});
+    const rows = (b.rows||[]).map(r=>{
+      if (r.t1!==undefined || r.t2!==undefined) return newRow(r.t1||"", r.t2||"", r.notes||"");
+      // older files stored a single "truss" text — split "A to B" ranges into the two boxes
+      const truss=(r.truss||"").trim();
+      const mm=/^(\d+)\s*(?:to|-|–|—)\s*(\d+)$/i.exec(truss);
+      return mm ? newRow(mm[1], mm[2], r.notes||"") : newRow(truss, "", r.notes||"");
+    });
+    STATE.barns[id] = { type, name, g, general:b.general||"", rows };
     STATE.order.push(id);
     ensureTrailingEmpty(id);
   });
@@ -366,51 +430,71 @@ function ensureTrailingEmpty(id){
  *  SETUP SCREEN
  * ================================================================== */
 function buildSetup(){
-  const pick = $("#barnPick"); pick.innerHTML="";
+  const list = $("#barnList"); list.innerHTML="";
   BARN_TYPES.forEach(b=>{
-    const cb = el("input",{type:"checkbox",value:b.key});
-    const opt = el("label",{class:"barnopt"},[cb, el("span",{class:"nm",text:b.label})]);
-    cb.addEventListener("change",()=>{ opt.classList.toggle("on", cb.checked); refreshStart(); });
-    pick.appendChild(opt);
+    const inp = el("input",{class:"qty",type:"number",min:"0",value:"0",inputmode:"numeric","aria-label":b.label+" count"});
+    const dec = el("button",{class:"dec",type:"button",text:"−","aria-label":"decrease"});
+    const inc = el("button",{class:"inc",type:"button",text:"+","aria-label":"increase"});
+    const row = el("div",{class:"qtyrow"},[ el("span",{class:"qnm",text:b.label}), el("div",{class:"stepper"},[dec,inp,inc]) ]);
+    row.dataset.type = b.key;
+    const sync = ()=>{ let v=parseInt(inp.value,10); if(isNaN(v)||v<0)v=0; if(v>99)v=99; inp.value=v; row.classList.toggle("on",v>0); refreshStart(); };
+    dec.addEventListener("click",()=>{ inp.value=Math.max(0,(parseInt(inp.value,10)||0)-1); sync(); });
+    inc.addEventListener("click",()=>{ inp.value=(parseInt(inp.value,10)||0)+1; sync(); });
+    inp.addEventListener("input",sync); inp.addEventListener("change",sync);
+    list.appendChild(row);
   });
+  if(!$("#dateInput").value) $("#dateInput").value = todayIso();
   $("#siteInput").addEventListener("input", refreshStart);
   refreshStart();
 }
-function selectedTypes(){
-  return [...document.querySelectorAll("#barnPick input:checked")].map(c=>c.value);
+function setupCounts(){
+  const m={};
+  document.querySelectorAll("#barnList .qtyrow").forEach(row=>{
+    const v=parseInt(row.querySelector(".qty").value,10)||0;
+    if(v>0) m[row.dataset.type]=v;
+  });
+  return m;
 }
+function totalSetupQty(){ return Object.values(setupCounts()).reduce((a,b)=>a+b,0); }
 function refreshStart(){
-  const ok = $("#siteInput").value.trim()!=="" && selectedTypes().length>0;
-  $("#startBtn").disabled = !ok;
+  $("#startBtn").disabled = !($("#siteInput").value.trim()!=="" && totalSetupQty()>0);
 }
 function prefillSetup(){
   $("#siteInput").value = STATE.site||"";
-  const present = new Set(STATE.order.map(id=>STATE.barns[id].type));
-  document.querySelectorAll("#barnPick input").forEach(c=>{
-    c.checked = present.has(c.value);
-    c.closest(".barnopt").classList.toggle("on", c.checked);
+  $("#dateInput").value = STATE.date||todayIso();
+  $("#nameInput").value = STATE.inspector||"";
+  const counts={}; STATE.order.forEach(id=>{ const t=STATE.barns[id].type; counts[t]=(counts[t]||0)+1; });
+  document.querySelectorAll("#barnList .qtyrow").forEach(row=>{
+    const v=counts[row.dataset.type]||0;
+    row.querySelector(".qty").value=v; row.classList.toggle("on",v>0);
   });
   refreshStart();
 }
 function startFromSetup(){
   const site = $("#siteInput").value.trim();
-  const types = selectedTypes();
-  if (!site || types.length===0) return;
-  STATE.site = site;
+  const counts = setupCounts();
+  if (!site || totalSetupQty()===0) return;
 
-  // Drop instances whose type was unchecked; keep the rest (and their data).
-  const keep = new Set(types);
-  STATE.order = STATE.order.filter(id=>{
-    if (keep.has(STATE.barns[id].type)) return true;
-    delete STATE.barns[id]; return false;
+  // Warn before removing any barn that already has data entered.
+  const losing=[];
+  BARN_TYPES.forEach(tp=>{
+    const target=counts[tp.key]||0, cur=instancesOfType(tp.key);
+    for(let i=target;i<cur.length;i++) if(barnHasData(cur[i])) losing.push(STATE.barns[cur[i]].name);
   });
-  // Add one instance for any newly-checked type that has none yet.
-  types.forEach(type=>{
-    if (instancesOfType(type).length===0){
-      const id=newId(); STATE.barns[id]=makeBarn(type, BTYPE[type].label); STATE.order.push(id);
-    }
+  if (losing.length && !confirm("Lowering the count will remove these barns and their notes:\n\n  • "+losing.join("\n  • ")+"\n\nContinue?")) return;
+
+  STATE.site = site;
+  STATE.date = $("#dateInput").value || "";
+  STATE.inspector = $("#nameInput").value.trim();
+
+  // Reconcile each type's instance count to the chosen target.
+  BARN_TYPES.forEach(tp=>{
+    const target = counts[tp.key]||0;
+    let cur = instancesOfType(tp.key);
+    while (cur.length > target){ const id=cur.pop(); STATE.order.splice(STATE.order.indexOf(id),1); delete STATE.barns[id]; }
+    while (cur.length < target){ const id=newId(); STATE.barns[id]=makeBarn(tp.key,tp.label); STATE.order.push(id); cur.push(id); }
   });
-  // Group tabs by type order (stable within a type).
+  renumberAll();
   STATE.order.sort((a,b)=> typeRank(STATE.barns[a].type)-typeRank(STATE.barns[b].type));
   if (!STATE.active || !STATE.barns[STATE.active]) STATE.active = STATE.order[0];
   STATE.order.forEach(ensureTrailingEmpty);
@@ -446,8 +530,8 @@ function addInstance(type){
 function duplicateActive(){
   const cur=STATE.barns[STATE.active];
   const id=newId();
-  STATE.barns[id]={ type:cur.type, name:autoName(cur.type), general:cur.general,
-    rows:cur.rows.filter(r=>!rowEmpty(r)).map(r=>newRow(r.truss,r.notes)) };
+  STATE.barns[id]={ type:cur.type, name:autoName(cur.type), g:Object.assign({},cur.g), general:cur.general,
+    rows:cur.rows.filter(r=>!rowEmpty(r)).map(r=>newRow(r.t1,r.t2,r.notes)) };
   ensureTrailingEmpty(id);
   const i=STATE.order.indexOf(STATE.active);
   STATE.order.splice(i+1,0,id); STATE.active=id;
@@ -484,7 +568,7 @@ function showForm(){
   $("#setup").style.display="none";
   $("#form").style.display="block";
   $("#siteTag").style.display="inline-flex";
-  $("#siteTagName").textContent = STATE.site;
+  $("#siteTagName").textContent = STATE.site + (STATE.date? " · "+fmtDate(STATE.date):"");
   renderTabs();
   renderPanel();
   autosave();
@@ -521,21 +605,43 @@ function renderPanel(){
   const panel = $("#panel"); panel.innerHTML="";
 
   panel.appendChild(el("h2",{text:titleFor(barn)}));
-  panel.appendChild(el("div",{class:"barnsub",text:"Site: "+STATE.site}));
+  panel.appendChild(el("div",{class:"barnsub",text:subLine()}));
   panel.appendChild(el("div",{class:"barnctl"},[
     el("button",{text:"✎ Rename tab", onclick:renameActive}),
     el("button",{text:"⧉ Duplicate", onclick:duplicateActive}),
     el("button",{class:"danger", text:"🗑 Remove barn", onclick:removeActive})
   ]));
 
-  // General notes
+  // General notes — structured fields
+  panel.appendChild(el("div",{class:"seclabel",text:"General barn notes"}));
+  const grid = el("div",{class:"genfields"});
+  GEN_FIELDS.forEach(f=>{
+    const wrap = el("div",{class:"gf"});
+    wrap.appendChild(el("label",{text:f.label}));
+    let ctl;
+    if (f.kind==="select"){
+      ctl = el("select");
+      ctl.appendChild(el("option",{value:"",text:"—"}));
+      f.opts.forEach(o=> ctl.appendChild(el("option",{value:o,text:o})));
+      ctl.value = (barn.g[f.key]||"");
+    } else if (f.kind==="num"){
+      ctl = el("input",{class:"gfin",type:"number",min:"0",inputmode:"numeric",placeholder:"#",value:barn.g[f.key]||""});
+    } else {
+      ctl = el("input",{class:"gfin",type:"text",placeholder:f.ph||"",value:barn.g[f.key]||""});
+    }
+    ctl.addEventListener(f.kind==="select"?"change":"input",()=>{ barn.g[f.key]=ctl.value; autosave(); });
+    wrap.appendChild(ctl); grid.appendChild(wrap);
+  });
+  panel.appendChild(grid);
+
+  // General notes — free text for anything else
   const gen = el("div",{class:"gen"});
-  gen.appendChild(el("label",{text:"General barn notes"}));
-  const ta = el("textarea",{class:"general",placeholder:"Notes about the whole barn — e.g. started on north side, moderate corrosion, 4 web member CLRs, 0 bottom chord CLRs…"});
+  gen.appendChild(el("label",{text:"Other general notes"}));
+  const ta = el("textarea",{class:"general",placeholder:"Anything else about the barn — e.g. started on north side, first & last 2 trusses are the fan bank…"});
   ta.value = barn.general;
   ta.addEventListener("input",()=>{ barn.general=ta.value; autosave(); });
   gen.appendChild(ta);
-  gen.appendChild(el("div",{class:"hint",text:"Put each general note on its own line."}));
+  gen.appendChild(el("div",{class:"hint",text:"Put each note on its own line."}));
   panel.appendChild(gen);
 
   // Truss table
@@ -553,24 +659,28 @@ function renderPanel(){
   barn.rows.forEach(r=> rowsWrap.appendChild(buildRowEl(barn, r)));
 
   panel.appendChild(el("div",{class:"footnote"},[
-    el("span",{text:"➕ A new row appears automatically when you start typing in the last one. Truss can be a single number, a list (1, 4, 9), or a range (1 to 8)."})
+    el("span",{text:"➕ A new row appears as you fill the last one. Enter one truss number, or a start and end for a range (e.g. 1 – 8)."})
   ]));
   updateRowCount();
 }
 
 function buildRowEl(barn, r){
-  const truss = el("input",{class:"truss",type:"text",placeholder:"e.g. 1 to 8",value:r.truss});
+  // two numeric boxes — a single truss, or start + end for a range.
+  // inputmode="numeric" brings up the iPad number keypad.
+  const t1 = el("input",{class:"t1",type:"text",inputmode:"numeric",pattern:"[0-9]*",placeholder:"#",value:r.t1});
+  const t2 = el("input",{class:"t2",type:"text",inputmode:"numeric",pattern:"[0-9]*",placeholder:"to",value:r.t2});
+  const pair = el("div",{class:"trusspair"},[t1, el("span",{class:"tosep",text:"to"}), t2]);
   const notes = el("textarea",{class:"notes",rows:"1",placeholder:"What did you observe?"});
   notes.value = r.notes;
   const del = el("button",{class:"del",title:"Remove this row",text:"×"});
-  const row = el("div",{class:"trow"},[truss, notes, del]);
+  const row = el("div",{class:"trow"},[pair, notes, del]);
 
   const refresh = ()=>{
     row.classList.toggle("filled", !rowEmpty(r));
     row.classList.toggle("empty", rowEmpty(r));
   };
   const onEdit = ()=>{
-    r.truss = truss.value; r.notes = notes.value;
+    r.t1 = t1.value; r.t2 = t2.value; r.notes = notes.value;
     autoGrow(notes);
     const rows = barn.rows;
     if (r===rows[rows.length-1] && !rowEmpty(r)){
@@ -579,7 +689,8 @@ function buildRowEl(barn, r){
     }
     refresh(); updateRowCount(); autosave();
   };
-  truss.addEventListener("input", onEdit);
+  t1.addEventListener("input", onEdit);
+  t2.addEventListener("input", onEdit);
   notes.addEventListener("input", onEdit);
 
   del.addEventListener("click", ()=>{
@@ -672,13 +783,16 @@ function buildPrint(){
     const barn=STATE.barns[id];
     const sec=el("div",{class:"pbarn"});
     sec.appendChild(el("h2",{text:titleFor(barn)}));
-    sec.appendChild(el("div",{class:"psite",text:"Site: "+STATE.site}));
-    if (barn.general.trim()) sec.appendChild(el("div",{class:"pgen",text:barn.general.trim()}));
+    sec.appendChild(el("div",{class:"psite",text:subLine()}));
+    const genLines=[];
+    GEN_FIELDS.forEach(f=>{ const v=((barn.g&&barn.g[f.key])||"").toString().trim(); if(v) genLines.push(f.xl+": "+v); });
+    if (barn.general.trim()) genLines.push(barn.general.trim());
+    if (genLines.length) sec.appendChild(el("div",{class:"pgen",text:genLines.join("\n")}));
     const rows=barn.rows.filter(r=>!rowEmpty(r));
     const tbl=el("table",{class:"ptab"});
     tbl.appendChild(el("tr",{},[el("th",{class:"tcol",text:"Truss"}),el("th",{text:"Notes"})]));
     if (rows.length===0) tbl.appendChild(el("tr",{},[el("td",{class:"tcol",text:"—"}),el("td",{text:"(no entries)"})]));
-    rows.forEach(r=> tbl.appendChild(el("tr",{},[el("td",{class:"tcol",text:r.truss}),el("td",{text:r.notes})])));
+    rows.forEach(r=> tbl.appendChild(el("tr",{},[el("td",{class:"tcol",text:trussText(r)}),el("td",{text:r.notes})])));
     sec.appendChild(tbl); root.appendChild(sec);
   });
 }
@@ -752,20 +866,25 @@ function sheetXml(id){
   const push=(cells)=>{ r++; rowsXml.push(`<row r="${r}">${cells}</row>`); return r; };
   const mergeFull=(rr)=>merges.push(`A${rr}:B${rr}`);
 
-  mergeFull(push(cell(`A${r+1}`,1, titleFor(barn))));            // title
-  mergeFull(push(cell(`A${r+1}`,4, "Site: "+(STATE.site||"")))); // site
-  push("");                                                      // blank
+  mergeFull(push(cell(`A${r+1}`,1, titleFor(barn))));                       // title
+  if (STATE.site)      mergeFull(push(cell(`A${r+1}`,4, "Site: "+STATE.site)));
+  if (STATE.date)      mergeFull(push(cell(`A${r+1}`,0, "Date: "+fmtDate(STATE.date))));
+  if (STATE.inspector) mergeFull(push(cell(`A${r+1}`,0, "Recorded by: "+STATE.inspector)));
+  push("");                                                                // blank
+  // structured general fields
+  GEN_FIELDS.forEach(f=>{ const v=((barn.g&&barn.g[f.key])||"").toString().trim(); if(v) mergeFull(push(cell(`A${r+1}`,0,f.xl+": "+v))); });
+  // free-text general notes
   const genLines=(barn.general||"").split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
   genLines.forEach(line=> mergeFull(push(cell(`A${r+1}`,0,line))));
-  if (genLines.length) push("");                                 // blank after general notes
-  push(cell(`A${r+1}`,2,"Truss")+cell(`B${r+1}`,2,"Notes"));     // header
+  push("");                                                                // blank before the table
+  push(cell(`A${r+1}`,2,"Truss")+cell(`B${r+1}`,2,"Notes"));               // header
   barn.rows.filter(x=>!rowEmpty(x)).forEach(x=>{
-    push(cell(`A${r+1}`,3,x.truss)+cell(`B${r+1}`,3,x.notes));
+    push(cell(`A${r+1}`,3,trussText(x))+cell(`B${r+1}`,3,x.notes));
   });
 
   const mc = merges.length? `<mergeCells count="${merges.length}">${merges.map(m=>`<mergeCell ref="${m}"/>`).join("")}</mergeCells>`:"";
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><cols><col min="1" max="1" width="22" customWidth="1"/><col min="2" max="2" width="70" customWidth="1"/></cols><sheetData>${rowsXml.join("")}</sheetData>${mc}</worksheet>`;
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><cols><col min="1" max="1" width="26" customWidth="1"/><col min="2" max="2" width="70" customWidth="1"/></cols><sheetData>${rowsXml.join("")}</sheetData>${mc}</worksheet>`;
 }
 
 function exportXlsx(){

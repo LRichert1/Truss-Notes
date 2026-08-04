@@ -1,7 +1,9 @@
 /* Offline service worker for the Truss Notes app.
    Caches the app shell so it launches with no internet (e.g. inside a barn).
-   Bump CACHE when you change index.html so devices pick up the new version. */
-const CACHE = "truss-notes-v1";
+   The page is fetched network-first, so a re-uploaded index.html is picked up
+   automatically the next time the iPad has signal — no version bump needed for
+   content changes. (Bump CACHE only to force-clear the offline copy.) */
+const CACHE = "truss-notes-v2";
 const ASSETS = [
   "./",
   "./index.html",
@@ -30,20 +32,27 @@ self.addEventListener("activate", (e) => {
 });
 
 self.addEventListener("fetch", (e) => {
-  if (e.request.method !== "GET") return;
+  const req = e.request;
+  if (req.method !== "GET") return;
+  const isDoc = req.mode === "navigate" || (req.headers.get("accept") || "").includes("text/html");
+  if (isDoc) {
+    // Network-first for the page: pick up a newer version whenever there's
+    // signal, fall back to the cached shell when offline.
+    e.respondWith(
+      fetch(req)
+        .then((res) => { const copy = res.clone(); caches.open(CACHE).then((c) => c.put("./index.html", copy)); return res; })
+        .catch(() => caches.match(req, { ignoreSearch: true }).then((h) => h || caches.match("./index.html")))
+    );
+    return;
+  }
+  // Cache-first for static assets (icons, manifest).
   e.respondWith(
-    caches.match(e.request, { ignoreSearch: true }).then((hit) =>
+    caches.match(req, { ignoreSearch: true }).then((hit) =>
       hit ||
-      fetch(e.request)
-        .then((res) => {
-          // keep the cache fresh for same-origin GETs
-          if (res && res.ok && res.type === "basic") {
-            const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(e.request, copy));
-          }
-          return res;
-        })
-        .catch(() => caches.match("./index.html"))
+      fetch(req).then((res) => {
+        if (res && res.ok && res.type === "basic") { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); }
+        return res;
+      }).catch(() => caches.match("./index.html"))
     )
   );
 });
